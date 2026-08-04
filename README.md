@@ -1,31 +1,37 @@
 # TikTok-MetaSec-Encryption
 
-unidbg wrapper around `libmetasec_ov` (musical_ly 46.x).
+Local `/sign` server that wraps TikTok's `libmetasec_ov` through unidbg (musical_ly 46.x).
 
-gives you the long Argus / Gorgon / Ladon headers phones actually send.
-the python repos stop at the old ~300 char stuff — this hits 700+.
+Most public Python signers still emit the short Argus (~300 chars). This one runs the native MetaSec path and comes out closer to what a real 46.x client sends (~700+).
 
-for research only. don't be dumb with it.
+Research / education only. Don't use it to break ToS or the law.
 
-## build
+## Build
 
-needs jdk 17 + maven
+JDK 17 + Maven:
 
-```
+```bash
 mvn -q package
 java -jar target/tiktok-metasec-encryption.jar 5099
 ```
 
-or docker:
+Docker:
 
-```
+```bash
 docker build -t metasec-sign .
 docker run --rm -p 5099:5099 metasec-sign
 ```
 
-## /sign
+Helper:
 
-POST json to `http://127.0.0.1:5099/sign`
+```bash
+./run.sh          # default :5099
+./run.sh 8080
+```
+
+## API
+
+`POST http://127.0.0.1:5099/sign`
 
 ```json
 {
@@ -33,15 +39,16 @@ POST json to `http://127.0.0.1:5099/sign`
   "data": "body=null",
   "device_id": "...",
   "iid": "...",
-  "path": "/aweme/v1/commit/item/digg/"
+  "path": "/aweme/v1/commit/item/digg/",
+  "host": "https://api16-normal-useast5.tiktokv.us",
+  "cookie": ""
 }
 ```
-
-response:
 
 ```json
 {
   "success": true,
+  "ok": true,
   "result": {
     "x-argus": "...",
     "x-gorgon": "...",
@@ -52,20 +59,22 @@ response:
 }
 ```
 
-same rough shape as https://github.com/tr4cex/TikTok-Encryption so you can point existing clients at it.
+Request/response shape is close enough to [tr4cex/TikTok-Encryption](https://github.com/tr4cex/TikTok-Encryption) that you can usually just swap the URL.
 
-```
+```bash
+pip install -r requirements.txt
 python example.py
 ```
 
-GET `/health` if you want a ready check.
+`GET /health` returns whether the engine finished loading.
 
-## layout
+## Layout
 
 ```
 pom.xml
 Dockerfile
 example.py
+run.sh
 src/main/java/com/ide/tiktok/metasec/
   SignServer.java
   MetaSecEngine.java
@@ -75,10 +84,12 @@ src/main/resources/native/
   libc++_shared.so
 ```
 
-## notes
+## Notes
 
-- first request is slow, engine has to boot
-- so is from a 46.x apk dump, swap it if you target something newer
-- windows/mac/linux all fine as long as unicorn loads
+- Cold start takes a bit — unidbg has to load the SO and run init.
+- The bundled `libmetasec_ov.so` is from a 46.x dump. Replace it if you're targeting a newer build.
+- Works on Windows / macOS / Linux as long as Unicorn's native lib loads.
 
-MIT — see LICENSE
+## License
+
+MIT — see [LICENSE](LICENSE).
